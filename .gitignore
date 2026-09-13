@@ -1,0 +1,20 @@
+# Credenciais e Variáveis de Ambiente
+.env
+
+# Banco de Dados Local
+*.db
+financeiro.db
+
+# Ambiente Virtual
+venv/
+.venv/
+env/
+
+# Cache do Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE
+.vscode/
+.idea/
