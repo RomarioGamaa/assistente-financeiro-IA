@@ -43,3 +43,16 @@ def consultar_saldo_hoje(telefone: str) -> dict:
         entradas, saidas = row[0], row[1]
         saldo = entradas - saidas
         return {"entradas": entradas, "saidas": saidas, "saldo": saldo}
+   
+def listar_transacoes_exportacao(telefone: str):
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT id, tipo, valor, categoria, forma_pagamento, data_registro, hora_registro
+            FROM transacoes
+            WHERE telefone = ?
+            ORDER BY id DESC
+        ''', (telefone,))
+        linhas = cursor.fetchall()
+        return [dict(linha) for linha in linhas]   

@@ -22,52 +22,88 @@
   </style>
 </head>
 <body>
-  <div class="chat-container">
-    <div class="chat-header">
-      <div class="chat-avatar">🤖</div>
-      <div>
-        <div>Assistente Financeiro</div>
-        <small style="color: #00a884; font-size: 0.75rem;">online</small>
+    <div class="chat-container">
+      
+      <!-- Cabeçalho -->
+      <div class="chat-header">
+        <div class="chat-avatar">🤖</div>
+        <div>
+          <div>Assistente Financeiro</div>
+          <div style="font-size: 11px; color: #10a37f; font-weight: normal;">online</div>
+        </div>
+  
+        <!-- Botões de Exportação -->
+        <div style="margin-left: auto; display: flex; gap: 8px;">
+          <a href="/exportar/csv" download style="color: #10a37f; text-decoration: none; font-size: 12px; border: 1px solid #10a37f; padding: 4px 8px; border-radius: 6px;">📥 CSV</a>
+          <a href="/exportar/xlsx" download style="color: #10a37f; text-decoration: none; font-size: 12px; border: 1px solid #10a37f; padding: 4px 8px; border-radius: 6px;">📊 Excel</a>
+        </div>
       </div>
-    </div>
-    
-    <div class="chat-messages" id="chat">
-      <div class="bubble bot">Olá! Pode enviar seus lançamentos (ex: <i>"Recebi 40 no pix"</i> ou <i>"Quanto fechei hoje?"</i>).</div>
-    </div>
+  
+      <!-- Área de Mensagens -->
+      <div class="chat-messages" id="chat">
+        <div class="bubble bot">Olá! Pode enviar seus lançamentos (ex: <i>"Recebi 40 no pix"</i> ou <i>"Quanto fechei hoje?"</i>).</div>
+      </div>
+  
+      <!-- Barra de Input -->
+      <form class="chat-input-bar" id="form">
+        <input type="text" id="mensagem" class="chat-input" placeholder="Mensagem..." autocomplete="off" required />
+        <button type="submit" class="btn-send">➤</button>
+      </form>
+  
+    </div> <!-- Fecha chat-container apenas aqui no final -->
+  
+    <script>
+      const form = document.getElementById('form');
+      const input = document.getElementById('mensagem');
+      const chat = document.getElementById('chat');
 
-    <form class="chat-input-bar" id="form">
-      <input type="text" id="mensagem" class="chat-input" placeholder="Mensagem..." autocomplete="off" required />
-      <button type="submit" class="btn-send">➤</button>
-    </form>
-  </div>
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const texto = input.value.trim();
+        if (!texto) return;
 
-  <script>
-    const form = document.getElementById("form");
-    const input = document.getElementById("mensagem");
-    const chat = document.getElementById("chat");
+        // Mensagem do usuário
+        const userBubble = document.createElement('div');
+        userBubble.className = 'bubble user';
+        userBubble.textContent = texto;
+        chat.appendChild(userBubble);
+        input.value = '';
+        chat.scrollTop = chat.scrollHeight;
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const texto = input.value.trim();
-      if (!texto) return;
+        try {
+          const res = await fetch('/webhook', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mensagem: texto, telefone: "web-demo" })
+          });
 
-      chat.innerHTML += `<div class="bubble user">${texto}</div>`;
-      input.value = "";
-      chat.scrollTop = chat.scrollHeight;
+          if (!res.ok) {
+            const errText = await res.text();
+            throw new Error(`HTTP ${res.status}: ${errText}`);
+          }
 
-      try {
-        const res = await fetch("/webhook", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ telefone: "5562999999999", mensagem: texto })
-        });
-        const data = await res.json();
-        chat.innerHTML += `<div class="bubble bot">${data.mensagem_resposta}</div>`;
-      } catch (err) {
-        chat.innerHTML += `<div class="bubble bot">❌ Erro de comunicação com o servidor.</div>`;
-      }
-      chat.scrollTop = chat.scrollHeight;
-    });
-  </script>
-</body>
-</html>
+          const data = await res.json();
+          console.log("Retorno do backend:", data);
+
+          // Extrai o conteúdo independentemente da chave de resposta retornada
+          const respostaBackend = data.mensagem_resposta ?? data.resposta ?? data.mensagem ?? data.reply ?? JSON.stringify(data);
+
+          // Renderiza a resposta do assistente
+          const botBubble = document.createElement('div');
+          botBubble.className = 'bubble bot';
+          botBubble.innerHTML = String(respostaBackend).replace(/\n/g, '<br>');
+          chat.appendChild(botBubble);
+
+        } catch (err) {
+          console.error("Falha na comunicação:", err);
+          const errorBubble = document.createElement('div');
+          errorBubble.className = 'bubble bot';
+          errorBubble.textContent = 'Erro ao se comunicar: ' + err.message;
+          chat.appendChild(errorBubble);
+        }
+
+        chat.scrollTop = chat.scrollHeight;
+      });
+    </script>
+  </body>
+  </html>
